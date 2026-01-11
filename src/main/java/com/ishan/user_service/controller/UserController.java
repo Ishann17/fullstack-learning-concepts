@@ -7,10 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -20,7 +18,7 @@ public class UserController {
     private UserService userService;
 
 
-    @PostMapping
+    /*@PostMapping
     public ResponseEntity<?> createNewUser(@RequestBody User user){
         User newUser = userService.createNewUser(user);
 
@@ -31,12 +29,12 @@ public class UserController {
                         .toUri();
 
        return ResponseEntity.created(location).body("User Got Created !");
-    }
+    }*/
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable int id){
-        Optional<User> userById = userService.getUserById(id);
-        return ResponseEntity.of(userById);
+        User userById = userService.getUserById(id);
+        return ResponseEntity.ok(userById);
     }
 
     @GetMapping

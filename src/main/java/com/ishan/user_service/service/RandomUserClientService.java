@@ -7,7 +7,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Service
 public class RandomUserClientService {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    //private final RestTemplate restTemplate = new RestTemplate();
 
     // RestTemplate is a synchronous (blocking) HTTP client.
     // Kept here (commented) only for learning and comparison purposes.
@@ -38,11 +38,29 @@ public class RandomUserClientService {
          */
         return webClient
                 .get() // Specify HTTP method (GET)
-                .uri("/api/") // Specify the endpoint (relative to baseUrl)
+//               .uri("/api/?nat=us,ca,au,gb,in") // Specify the endpoint (relative to baseUrl), we need to use query param because random user api can give users from all across the global which could be Languages like arabic, greek etc. we need only english ( this hardcoded way which can give errors )
+                .uri(uriBuilder -> uriBuilder.path("/api/") //WebClient uses a URI builder lambda to safely construct dynamic URIs with query parameters.This avoids string concatenation and makes it easy to add or modify parameters like nationality filters.
+                .queryParam("nat", "us,ca,au,gb,in")
+                .build())
                 .retrieve()// Trigger the HTTP call and prepare to read response
                 .bodyToMono(String.class)// Convert response body into Mono<String> Mono means "eventually one value"
                 .block(); // BLOCKING call: Waits for the response and converts Mono<String> → String (THIS STEP IS ONLY FOR LEARNING) TO MAKE IT SYNCHRONOUS
         /*“WebClient returns a Mono<T> because the call is asynchronous.
         When we call .block(), it waits for the value and returns the actual object, which is why the method can return String.”*/
     }
+
+    public String fetchMultipleRandomUsersRaw(int count){
+
+        return webClient
+                .get()
+                .uri(uriBuilder -> uriBuilder.path("/api/")
+                        .queryParam("results", count) // 'results' query param tells the API how many users to return in one response
+                        .queryParam("nat", "us,ca,au,gb,in")
+                        .build())
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+    }
+
 }

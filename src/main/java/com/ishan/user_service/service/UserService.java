@@ -8,7 +8,7 @@ import java.util.Optional;
 public interface UserService {
 
     User createNewUser(User user);
-    Optional<User> getUserById(int id);
+    User getUserById(int id);
     List<User> searchUserByAge(int minAge, int maxAge);
 
 }

@@ -1,6 +1,7 @@
 package com.ishan.user_service.service;
 
 
+import com.ishan.user_service.customExceptions.UserNotFoundException;
 import com.ishan.user_service.model.User;
 import com.ishan.user_service.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,9 +23,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public  Optional<User> getUserById(int id) {
-        Optional<User> user = userRepository.findById(id);
-        return user;
+    public User getUserById(int id) {
+        return userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
     }
 
     @Override
