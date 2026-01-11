@@ -5,6 +5,8 @@ import com.ishan.user_service.customExceptions.UserNotFoundException;
 import com.ishan.user_service.model.User;
 import com.ishan.user_service.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,7 +30,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<User> searchUserByAge(int minAge, int maxAge) {
-        return userRepository.findByAgeBetween(minAge, maxAge);
+    public Page<User> searchUserByAge(int minAge, int maxAge, Pageable pageable) {
+        return userRepository.findByAgeBetween(minAge, maxAge, pageable);
     }
 }
