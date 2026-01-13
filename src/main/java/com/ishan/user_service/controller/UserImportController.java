@@ -3,11 +3,14 @@ package com.ishan.user_service.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ishan.user_service.customExceptions.BatchLimitExceededException;
 import com.ishan.user_service.dto.UserDto;
 import com.ishan.user_service.mapper.UserMapperFromRandomToDto;
 import com.ishan.user_service.model.User;
 import com.ishan.user_service.service.RandomUserClientService;
 import com.ishan.user_service.service.UserImportService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,6 +35,8 @@ import java.util.List;
 @RequestMapping("/api/v1/users")
 public class UserImportController {
 
+    private static final Logger log = LoggerFactory.getLogger(UserImportController.class);
+
     // Service that handles persistence and business rules
     private final UserImportService userImportService;
 
@@ -55,6 +60,7 @@ public class UserImportController {
      */
     public UserImportController(UserImportService userImportService,
                                 RandomUserClientService randomUserClientService) {
+        log.info("UserImportController Constructor Called");
         this.userImportService = userImportService;
         this.randomUserClientService = randomUserClientService;
     }
@@ -68,6 +74,8 @@ public class UserImportController {
      */
     @PostMapping("/import")
     public ResponseEntity<?> importUserFromExternalSource() throws JsonProcessingException {
+
+        log.info("importUserFromExternalSource invoked");
 
         // STEP 1: Call the third-party API and get raw JSON response
         String fetchRandomUserRaw = randomUserClientService.fetchRandomUsersRaw();
@@ -136,6 +144,11 @@ public class UserImportController {
     @PostMapping("/import/batch")
     public ResponseEntity<?> importMultipleUsersFromExternalSource(@RequestParam(defaultValue = "10") int count) throws JsonProcessingException {
 
+        //fall_back mechanism
+        if(count > 5000){
+            throw new BatchLimitExceededException("Count size cannot be more than 5000");
+        }
+
         // STEP 1: Call external API to fetch 'count' users in ONE request
         // Example URL generated internally:
         // https://randomuser.me/api/?results=10&nat=us,ca,au,gb,in
@@ -150,7 +163,7 @@ public class UserImportController {
         // This array contains multiple user objects
         JsonNode rawUsersDataArray =
                 navigableTree.get("results");
-
+        System.out.println("RESULTS SIZE FROM API = " + rawUsersDataArray.size());
         // STEP 4: Convert JSON array → List<UserDto> using mapper
         // Mapper is responsible ONLY for data transformation
         List<UserDto> userDtoList =

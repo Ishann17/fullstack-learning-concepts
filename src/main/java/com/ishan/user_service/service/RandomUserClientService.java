@@ -1,11 +1,15 @@
 package com.ishan.user_service.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Service
 public class RandomUserClientService {
+
+    private static final Logger log = LoggerFactory.getLogger(RandomUserClientService.class);
 
     //private final RestTemplate restTemplate = new RestTemplate();
 
@@ -16,13 +20,8 @@ public class RandomUserClientService {
     // WebClient is Spring's modern HTTP client.
     // It supports non-blocking and reactive communication by default.
     private final WebClient webClient;
-
-    public RandomUserClientService() {
-        // Build WebClient with a fixed base URL so we don't repeat it
-        // in every request.
-        this.webClient = WebClient.builder()
-                        .baseUrl("https://randomuser.me") // Base URL of the third-party API
-                        .build();
+    public RandomUserClientService(WebClient webClient) {
+       this.webClient = webClient;
     }
 
     public String fetchRandomUsersRaw(){

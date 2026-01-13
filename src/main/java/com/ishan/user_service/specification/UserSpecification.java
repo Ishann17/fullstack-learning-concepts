@@ -92,3 +92,11 @@ public class UserSpecification {
                 ));
     }
 }
+
+/*
+*******IMPORTANT NOTE********
+* “Why didn’t you make your Specification class implement Specification<User>?”
+* Because we needed dynamic, combinable filters. Implementing Specification directly would
+* force all logic into one toPredicate method.
+* Returning small reusable Specifications allows clean composition using .and() and .or().
+ */

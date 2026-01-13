@@ -1,5 +1,6 @@
 package com.ishan.user_service.exceptionHandler;
 
+import com.ishan.user_service.customExceptions.BatchLimitExceededException;
 import com.ishan.user_service.customExceptions.UserNotFoundException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -61,6 +62,17 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
 
+    }
+
+    @ExceptionHandler(BatchLimitExceededException.class)
+    public ResponseEntity<?> handleBatchLimitExceededException(BatchLimitExceededException exception){
+        Map<String, Object> errorResponse = new LinkedHashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+        errorResponse.put("error", "Batch count limit exceeded!");
+        errorResponse.put("message", exception.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 }
 /* *******IMPORTANT NOTE*********
