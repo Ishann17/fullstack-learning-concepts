@@ -69,4 +69,11 @@ public class UserController {
         return ResponseEntity.ok(searchedUsers);
     }
 
+    @GetMapping("/exportCSV")
+    public ResponseEntity<?> exportAllUsersToCSV(){
+
+
+        return null;
+    }
+
 }

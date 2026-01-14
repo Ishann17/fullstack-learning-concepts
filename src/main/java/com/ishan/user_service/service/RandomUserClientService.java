@@ -22,9 +22,11 @@ public class RandomUserClientService {
     private final WebClient webClient;
     public RandomUserClientService(WebClient webClient) {
        this.webClient = webClient;
+        log.info("RandomUserClientService Constructor called WebClient Injection Done");
     }
 
     public String fetchRandomUsersRaw(){
+        log.info("fetchRandomUsersRaw invoked, getting data for Single User");
         //String url = "https://randomuser.me/api/";
         //String restTemplateResponse = restTemplate.getForObject(url, String.class);
         /*
@@ -49,7 +51,7 @@ public class RandomUserClientService {
     }
 
     public String fetchMultipleRandomUsersRaw(int count){
-
+        log.info("fetchMultipleRandomUsersRaw invoked, getting data for {} Users", count);
         return webClient
                 .get()
                 .uri(uriBuilder -> uriBuilder.path("/api/")

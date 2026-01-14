@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- SPRING / FRAMEWORK LOGS -->
+    <appender name="SPRING_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{HH:mm:ss} %-5level %logger{36} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- YOUR APPLICATION LOGS -->
+    <appender name="APP_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{HH:mm:ss} %-5level [APP] >>> %class{0}.%method - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- ROOT: SPRING -->
+    <root level="INFO">
+        <appender-ref ref="SPRING_CONSOLE"/>
+    </root>
+
+    <!-- YOUR PACKAGE -->
+    <logger name="com.ishan.user_service" level="INFO" additivity="false">
+        <appender-ref ref="APP_CONSOLE"/>
+    </logger>
+
+</configuration>

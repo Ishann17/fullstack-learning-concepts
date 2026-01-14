@@ -143,9 +143,10 @@ public class UserImportController {
      */
     @PostMapping("/import/batch")
     public ResponseEntity<?> importMultipleUsersFromExternalSource(@RequestParam(defaultValue = "10") int count) throws JsonProcessingException {
-
+        log.info("importMultipleUsersFromExternalSource invoked");
         //fall_back mechanism
         if(count > 5000){
+            log.warn("Batch Limit Exceeded {}, count more than 5000", count);
             throw new BatchLimitExceededException("Count size cannot be more than 5000");
         }
 
@@ -163,12 +164,12 @@ public class UserImportController {
         // This array contains multiple user objects
         JsonNode rawUsersDataArray =
                 navigableTree.get("results");
-        System.out.println("RESULTS SIZE FROM API = " + rawUsersDataArray.size());
+        log.info("RESULTS SIZE FROM API {}",rawUsersDataArray.size());
         // STEP 4: Convert JSON array → List<UserDto> using mapper
         // Mapper is responsible ONLY for data transformation
         List<UserDto> userDtoList =
                 UserMapperFromRandomToDto.convertRandomUsersToUserDtoList(rawUsersDataArray);
-
+        log.info("DTO List SIZE After Conversion {}",userDtoList.size());
         // STEP 5: Persist all users in a single transaction using saveAll()
         // If any insert fails, the entire batch is rolled back
         userImportService.importMultipleUsersFromExternalSource(userDtoList);
