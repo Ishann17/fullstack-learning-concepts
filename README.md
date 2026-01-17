@@ -234,20 +234,20 @@ GET /api/users/search?name=John&city=Austin&minAge=25&maxAge=35
 📊 Performance Results (Measured on Local Setup)
 
 ✅ CSV Export (Streaming + Keyset Pagination)
-Records Exported: 3,000,000 users
-Approach: StreamingResponseBody + BufferedWriter + Keyset Pagination
-Time Taken: ~12 seconds
-RAM Usage: Stable (no major spikes) ✅
-Notes: Excel can’t open full file due to 1,048,576 row limit, file verified using CLI.
+- Records Exported: 3,000,000 users
+- Approach: StreamingResponseBody + BufferedWriter + Keyset Pagination
+- Time Taken: ~12 seconds
+- RAM Usage: Stable (no major spikes) ✅
+- Notes: Excel can’t open full file due to 1,048,576 row limit, file verified using CLI.
 
 ✅ Bulk Import (Faker + Batch Insert + Batch Commits)
-Records Imported: 2,000,000 users
-Batch Size: 1000
-Transaction Strategy: REQUIRES_NEW per batch commit
-DB Insert Time: ~281 seconds
-Avg Insert Speed: ~7100 users/sec
+- Records Imported: 2,000,000 users
+- Batch Size: 1000
+- Transaction Strategy: REQUIRES_NEW per batch commit
+- DB Insert Time: ~281 seconds
+- Avg Insert Speed: ~7100 users/sec
 
-Benefit: Partial progress persists even if the app/network fails mid-way ✅
+- Benefit: Partial progress persists even if the app/network fails mid-way ✅
 
 ---
 
