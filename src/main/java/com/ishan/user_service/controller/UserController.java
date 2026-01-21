@@ -4,6 +4,7 @@ package com.ishan.user_service.controller;
 import com.ishan.user_service.dto.UserDto;
 import com.ishan.user_service.model.User;
 import com.ishan.user_service.service.user.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,7 +25,8 @@ public class UserController {
 
 
     @PostMapping
-    public ResponseEntity<?> createNewUser(@RequestBody UserDto userDto){
+    //@Valid meaning -> Spring, before calling my method, validate this DTO using the rules written on its fields.
+    public ResponseEntity<?> createNewUser( @Valid @RequestBody UserDto userDto){
         User newUser = userService.createNewUser(userDto);
 
         URI location = ServletUriComponentsBuilder
@@ -33,7 +35,7 @@ public class UserController {
                         .buildAndExpand(newUser.getId())
                         .toUri();
 
-       return ResponseEntity.created(location).body("User Got Created !");
+       return ResponseEntity.created(location).body("User successfully created with id :: " + newUser.getId());
     }
 
     @GetMapping("/{id}")
