@@ -26,7 +26,7 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
 // reliably (even if compiler/runtime doesn't retain parameter names).
 //
 // Example: lastId=5000, size=1000 → returns the next 1000 users after id 5000.
-    @Query(value = "SELECT * FROM user WHERE id > :lastId ORDER BY id ASC LIMIT :size", nativeQuery = true)
+    @Query(value = "SELECT * FROM users WHERE id > :lastId ORDER BY id ASC LIMIT :size", nativeQuery = true)
     List<User> fetchUserUsingNextBatch(@Param("lastId") Integer lastId,
                                        @Param("size") Integer size);
 

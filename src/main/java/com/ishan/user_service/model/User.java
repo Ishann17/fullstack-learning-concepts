@@ -2,10 +2,17 @@ package com.ishan.user_service.model;
 
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Data
+@Builder
+@Table(name = "users")
+@AllArgsConstructor
+@NoArgsConstructor
 public class User {
 
     @Id
@@ -20,6 +27,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.TABLE, generator = "user_id_gen")
     private Integer id;
     private String name;
+    @Column(unique = true, nullable = false)
     private String email;
     private String city;
     private String state;
