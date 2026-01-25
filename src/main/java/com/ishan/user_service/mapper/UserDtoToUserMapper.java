@@ -18,7 +18,8 @@ public class UserDtoToUserMapper {
         }
         user.setState(userDto.getState());
         user.setEmail(userDto.getEmail());
-        user.setName(userDto.getFirstName() + " " + userDto.getLastName());
+        user.setFirstName(userDto.getFirstName());
+        user.setLastName(userDto.getLastName());
 
         return user;
     }
@@ -26,7 +27,8 @@ public class UserDtoToUserMapper {
     public static User updateExistingUserWithUserDto(UserDto userDto, User existingUser){
 
         String last = (userDto.getLastName() == null) ? "" : userDto.getLastName();
-        existingUser.setName(userDto.getFirstName() + " " + last);
+        existingUser.setFirstName(userDto.getFirstName());
+        existingUser.setLastName(userDto.getLastName());
         existingUser.setEmail(userDto.getEmail());
         existingUser.setCity(userDto.getCity());
         existingUser.setState(userDto.getState());

@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 
 @Repository
@@ -32,6 +33,11 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
 
 // Used only for progress % (single query)
 // Avoids guessing completion during long exports
-    @Query(value = "SELECT COUNT(*) FROM user", nativeQuery = true)
+    @Query(value = "SELECT COUNT(*) FROM users", nativeQuery = true)
     long countAllUsers();
+
+    Optional<User> findByIdAndDeletedFalse(Integer id);
+
 }
+
+

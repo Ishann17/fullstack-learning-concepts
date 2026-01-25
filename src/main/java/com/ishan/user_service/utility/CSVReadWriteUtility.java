@@ -43,13 +43,15 @@ public class CSVReadWriteUtility {
 
     public static String toCsvRow(User user){
         String id = user.getId() != null ? String.valueOf(user.getId()) : "";
-        String name = user.getName() != null ? user.getName() : "";
+        String fName = user.getFirstName() != null ? user.getFirstName() : "";
+        String lName = user.getLastName() != null ? user.getLastName() : "";
         String age = String.valueOf(user.getAge());
         String gender = user.getGender() != null ? user.getGender() : "";
         String city = user.getCity() != null ? user.getCity() : "";
         String state = user.getState() != null ? user.getState() : "";
         String email = user.getEmail() != null ? user.getEmail() : "";
         String mobile = user.getMobileNumber() != null ? user.getMobileNumber() : "";
+        String name = fName + " " + lName;
         return String.join(",", id,name,age,gender,city,state,email,mobile);
     }
 

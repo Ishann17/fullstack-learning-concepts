@@ -19,4 +19,5 @@ public interface UserService {
     User updateUserSpecificField(int id, UserDto userDto);
     void deleteUser(int id);
 
+    User reactivateUser(int id);
 }

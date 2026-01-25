@@ -27,7 +27,7 @@ public class UserRepositoryTests {
     @Test
     void saveUserTest(){
         User user = User.builder()
-                    .name("test")
+                    .firstName("test")
                     .age(28)
                     .email("test123@kok.com")
                     .city("ddun")
@@ -42,7 +42,7 @@ public class UserRepositoryTests {
     void saveAll_shouldFail_whenDuplicateEmails(){
 
         User user1 = User.builder()
-                .name("testOne")
+                .firstName("testOne")
                 .age(28)
                 .email("test@kok.com")
                 .city("ddun")
@@ -51,7 +51,7 @@ public class UserRepositoryTests {
 
 
         User user2 = User.builder()
-                .name("testTwo")
+                .firstName("testTwo")
                 .age(33)
                 .email("test@kok.com")
                 .city("haridwar")
@@ -90,7 +90,7 @@ public class UserRepositoryTests {
     private User createTestUsers(String email){
 
         User user = User.builder()
-                .name("testOne")
+                .firstName("testOne")
                 .age(28)
                 .email(email)
                 .city("ddun")

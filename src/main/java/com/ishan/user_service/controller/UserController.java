@@ -87,14 +87,20 @@ public class UserController {
 
     @PutMapping("/{id}")
     public  ResponseEntity<?> updateUser(@PathVariable int id, @Valid @RequestBody UserDto userDto){
+        log.info("[UPDATE_USER] Request received | userId={} firstName={} age={} gender={} email={}",
+                id, userDto.getFirstName(), userDto.getAge(), userDto.getGender(), userDto.getEmail());
         User user = userService.updateUser(id, userDto);
+        log.info("[UPDATE_USER] Success | userId={}", user.getId());
         return ResponseEntity.status(HttpStatus.OK).body(user);
     }
 
 
     @PatchMapping("/{id}")
     public  ResponseEntity<?> updateUserSpecificField(@PathVariable int id, @RequestBody UserDto userDto){
+        log.info("[UPDATE_PARTIAL_USER] Request received | firstName={} age={} gender={} email={}",
+                userDto.getFirstName(), userDto.getAge(), userDto.getGender(), userDto.getEmail());
         User user = userService.updateUserSpecificField(id, userDto);
+        log.info("[UPDATE_PARTIAL_USER] Success | userId={}", user.getId());
         return ResponseEntity.ok(user);
     }
 
@@ -103,4 +109,11 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{id}/reactivate")
+    public ResponseEntity<?> reactivateDeletedUser(@PathVariable int id){
+        User user = userService.reactivateUser(id);
+        return ResponseEntity.ok(user);
+    }
+
 }

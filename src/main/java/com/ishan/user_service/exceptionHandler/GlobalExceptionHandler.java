@@ -2,7 +2,9 @@ package com.ishan.user_service.exceptionHandler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ishan.user_service.customExceptions.BatchLimitExceededException;
+import com.ishan.user_service.customExceptions.UserIsActiveException;
 import com.ishan.user_service.customExceptions.UserNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -118,7 +120,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleUnexpectedException(Exception exception){
+    public ResponseEntity<?> handleUnexpectedException(Exception exception, HttpServletRequest request){
 
         log.error("[UNEXPECTED_ERROR] {}", exception.getMessage(), exception);
 
@@ -127,9 +129,23 @@ public class GlobalExceptionHandler {
         errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         errorResponse.put("error", "Internal Server Error");
         errorResponse.put("message", "Something went wrong");
+        errorResponse.put("path", request.getRequestURI());
+
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
 
+    }
+
+    @ExceptionHandler(UserIsActiveException.class)
+    public ResponseEntity<?> handleUserIsActiveException(Exception exception, HttpServletRequest request){
+        Map<String, Object> errorResponse = new LinkedHashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+        errorResponse.put("error", "Cannot Reactivate Active User");
+        errorResponse.put("message", exception.getMessage());
+        errorResponse.put("path", request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
 }

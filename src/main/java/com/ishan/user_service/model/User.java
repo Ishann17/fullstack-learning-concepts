@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Data
 @Builder
@@ -26,18 +28,21 @@ public class User {
     )
     @GeneratedValue(strategy = GenerationType.TABLE, generator = "user_id_gen")
     private Integer id;
-    private String name;
-    @Column(unique = true, nullable = false)
+    private String firstName;
+    private String lastName;
+    //@Column(unique = true, nullable = false) commented because Faker gives duplicate users
     private String email;
     private String city;
     private String state;
     private int age;
     private String mobileNumber;
     private String gender;
+    private boolean deleted = false;
+    private LocalDateTime deletedAt;
 
 }
 /**
- * ✅ WHY we changed ID generation from IDENTITY -> TABLE (MySQL + bulk insert optimization)
+ *  WHY we changed ID generation from IDENTITY -> TABLE (MySQL + bulk insert optimization)
  *
  * PROBLEM WITH GenerationType.IDENTITY (what we had earlier):
  * - In IDENTITY, the database generates the ID at insert time (AUTO_INCREMENT).
@@ -50,24 +55,24 @@ public class User {
  * - This is why bulk insert was slow and Hibernate stats showed:
  *   "executing 0 JDBC batches"
  *
- * ✅ WHY TABLE strategy helps:
+ *  WHY TABLE strategy helps:
  * - TABLE strategy uses a separate table to generate IDs.
  * - Hibernate can pre-allocate IDs in bulk BEFORE inserting rows.
  * - Example: allocationSize=1000
  *   -> Hibernate asks once: "Give me next 1000 IDs"
  *   -> Then it can insert 1000 users in a batch without waiting for DB IDs per row.
  *
- * ✅ WHAT TableGenerator does here:
+ * WHAT TableGenerator does here:
  * - Creates/uses a table: id_generator
  * - Stores last used ID for different entities (gen_name -> gen_value)
  * - For User, we use key "user_id"
  *
- * ✅ PERFORMANCE BENEFIT:
+ * PERFORMANCE BENEFIT:
  * - Enables true JDBC batching in MySQL
  * - Faster bulk inserts (less DB round-trips)
  * - Lower memory pressure + better throughput when inserting millions of records
  *
- * ⚠️ TRADE-OFFS / Notes:
+ * TRADE-OFFS / Notes:
  * - IDs can have gaps (normal in batch allocation).
  * - Requires the id_generator table to exist/manage values.
  * - TABLE is not as fast as SEQUENCE (Postgres), but in MySQL it's the best batching-friendly option.

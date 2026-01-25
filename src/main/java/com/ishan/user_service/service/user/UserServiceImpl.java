@@ -1,6 +1,7 @@
 package com.ishan.user_service.service.user;
 
 
+import com.ishan.user_service.customExceptions.UserIsActiveException;
 import com.ishan.user_service.customExceptions.UserNotFoundException;
 import com.ishan.user_service.dto.UserDto;
 import com.ishan.user_service.mapper.UserDtoToUserMapper;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Service
@@ -37,7 +39,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserById(int id) {
-        return userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        return userRepository.findByIdAndDeletedFalse(id).orElseThrow(() -> new UserNotFoundException(id));
     }
 
 
@@ -82,7 +84,10 @@ public class UserServiceImpl implements UserService {
         User existing = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
 
         if (userDto.getFirstName() != null && !userDto.getFirstName().isBlank())
-            existing.setName(userDto.getFirstName());
+            existing.setFirstName(userDto.getFirstName());
+
+        if (userDto.getLastName() != null && !userDto.getLastName().isBlank())
+            existing.setLastName(userDto.getLastName());
 
         if (userDto.getEmail() != null && !userDto.getEmail().isBlank())
             existing.setEmail(userDto.getEmail());
@@ -93,7 +98,7 @@ public class UserServiceImpl implements UserService {
         if (userDto.getState() != null)
             existing.setState(userDto.getState());
 
-        if (userDto.getAge() >= 1)
+        if (userDto.getAge() != null && userDto.getAge() >= 1)
             existing.setAge(userDto.getAge());
 
         if (userDto.getPhNum() != null)
@@ -107,8 +112,25 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(int id) {
+        User existingUser = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+
+        existingUser.setDeleted(true);
+        existingUser.setDeletedAt(LocalDateTime.now());
+
+        userRepository.save(existingUser);
+    }
+
+    @Override
+    public User reactivateUser(int id) {
         User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
-        userRepository.delete(user);
+        if(!user.isDeleted()){
+            throw new UserIsActiveException(id);
+        }
+
+        user.setDeleted(false);
+        user.setDeletedAt(null);
+
+        return userRepository.save(user);
     }
 
 }
