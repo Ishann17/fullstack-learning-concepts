@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -84,4 +85,22 @@ public class UserController {
         return ResponseEntity.ok(searchedUsers);
     }
 
+    @PutMapping("/{id}")
+    public  ResponseEntity<?> updateUser(@PathVariable int id, @Valid @RequestBody UserDto userDto){
+        User user = userService.updateUser(id, userDto);
+        return ResponseEntity.status(HttpStatus.OK).body(user);
+    }
+
+
+    @PatchMapping("/{id}")
+    public  ResponseEntity<?> updateUserSpecificField(@PathVariable int id, @RequestBody UserDto userDto){
+        User user = userService.updateUserSpecificField(id, userDto);
+        return ResponseEntity.ok(user);
+    }
+
+    @DeleteMapping("/{id}")
+    public  ResponseEntity<?> deleteUser(@PathVariable int id){
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
 }

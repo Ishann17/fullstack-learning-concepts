@@ -7,25 +7,15 @@ import com.ishan.user_service.mapper.UserDtoToUserMapper;
 import com.ishan.user_service.model.User;
 import com.ishan.user_service.repository.UserRepository;
 import com.ishan.user_service.specification.UserSpecification;
-import com.ishan.user_service.utility.CSVReadWriteUtility;
 import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -76,6 +66,49 @@ public class UserServiceImpl implements UserService {
         }
 
         return userRepository.findAll(spec, pageable);
+    }
+
+    @Override
+    public User updateUser(int id, UserDto userDto) {
+        User existingUser = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        User updatedUser = UserDtoToUserMapper.updateExistingUserWithUserDto(userDto, existingUser);
+        return userRepository.save(updatedUser);
+
+    }
+
+    @Override
+    public User updateUserSpecificField(int id, UserDto userDto) {
+
+        User existing = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+
+        if (userDto.getFirstName() != null && !userDto.getFirstName().isBlank())
+            existing.setName(userDto.getFirstName());
+
+        if (userDto.getEmail() != null && !userDto.getEmail().isBlank())
+            existing.setEmail(userDto.getEmail());
+
+        if (userDto.getCity() != null)
+            existing.setCity(userDto.getCity());
+
+        if (userDto.getState() != null)
+            existing.setState(userDto.getState());
+
+        if (userDto.getAge() >= 1)
+            existing.setAge(userDto.getAge());
+
+        if (userDto.getPhNum() != null)
+            existing.setMobileNumber(userDto.getPhNum());
+
+        if (userDto.getGender() != null)
+            existing.setGender(userDto.getGender());
+
+        return userRepository.save(existing);
+    }
+
+    @Override
+    public void deleteUser(int id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        userRepository.delete(user);
     }
 
 }

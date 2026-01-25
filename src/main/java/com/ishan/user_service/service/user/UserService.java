@@ -15,6 +15,8 @@ public interface UserService {
     User getUserById(int id);
     Page<User> searchUserByAge(int minAge, int maxAge, Pageable pageable);
     Page<User> searchUsers(String name, Integer age, String city, String state, Pageable pageable);
-
+    User updateUser(int id, UserDto userDto);
+    User updateUserSpecificField(int id, UserDto userDto);
+    void deleteUser(int id);
 
 }

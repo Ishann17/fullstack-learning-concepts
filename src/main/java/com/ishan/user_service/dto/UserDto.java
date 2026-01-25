@@ -15,7 +15,7 @@ public class UserDto {
     String city;
 
     @Min(value = 1, message = "Age must be greater or equal to 1")
-    int age;
+    Integer age;
 
     @Email(message = "Email format is invalid")
     @NotBlank(message = "Email is required")
