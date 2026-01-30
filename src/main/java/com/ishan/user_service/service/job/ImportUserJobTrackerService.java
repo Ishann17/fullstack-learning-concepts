@@ -5,7 +5,7 @@ import com.ishan.user_service.dto.ImportUserJobInfoDto;
 public interface ImportUserJobTrackerService {
 
     // Creates a new job entry and returns a unique jobId (like an orderId)
-    String createJob(int requestedCount);
+    String createJob(String userId, int requestedCount);
 
     // Fetch current job status (so client can poll)
     ImportUserJobInfoDto getJobStatus(String jobId);

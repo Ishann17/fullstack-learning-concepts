@@ -10,6 +10,8 @@ import com.ishan.user_service.model.User;
 import com.ishan.user_service.service.MockUserGeneratorService;
 import com.ishan.user_service.service.RandomUserClientService;
 import com.ishan.user_service.service.job.ImportUserJobTrackerService;
+import com.ishan.user_service.service.ratelimit.ImportJobCostTier;
+import com.ishan.user_service.service.ratelimit.ImportUsersRateLimitGuardService;
 import com.ishan.user_service.service.user.UserImportAsyncService;
 import com.ishan.user_service.service.user.UserImportService;
 import org.slf4j.Logger;
@@ -50,6 +52,8 @@ public class UserImportController {
 
     private final UserImportAsyncService userImportAsyncService;
 
+    private final ImportUsersRateLimitGuardService rateLimitGuardService;
+
     /**
      * ObjectMapper is used to convert raw JSON text into
      * a navigable JSON tree (JsonNode).
@@ -65,9 +69,10 @@ public class UserImportController {
      * - Avoids field injection pitfalls
      */
     public UserImportController(UserImportService userImportService,
-                                RandomUserClientService randomUserClientService, MockUserGeneratorService mockUserGeneratorService, ImportUserJobTrackerService importUserJobTrackerService, UserImportAsyncService userImportAsyncService) {
+                                RandomUserClientService randomUserClientService, MockUserGeneratorService mockUserGeneratorService, ImportUserJobTrackerService importUserJobTrackerService, UserImportAsyncService userImportAsyncService, ImportUsersRateLimitGuardService rateLimitGuardService) {
         this.importUserJobTrackerService = importUserJobTrackerService;
         this.userImportAsyncService = userImportAsyncService;
+        this.rateLimitGuardService = rateLimitGuardService;
 
         log.info("UserImportController Constructor Called");
         this.userImportService = userImportService;
@@ -233,11 +238,23 @@ public class UserImportController {
     }
 
     @PostMapping("/import/async")
-    public ResponseEntity<?> importMultipleUsersFromFakerLibraryWithAsyncJob(@RequestParam(defaultValue = "10") int count){
-        String jobId = importUserJobTrackerService.createJob(count);
+    public ResponseEntity<?> importMultipleUsersFromFakerLibraryWithAsyncJob(@RequestHeader("X-USER-ID") String userId, @RequestParam(defaultValue = "10") int count){
+
+        //Rate Limit Check
+        rateLimitGuardService.checkIfAllowed(userId, count);
+
+        //Determine the Job Tier (S,M,L OR XL)
+        ImportJobCostTier tier = ImportJobCostTier.fromCount(count);
+
+        //Create Job ID
+        String jobId = importUserJobTrackerService.createJob(userId, count);
+
+        //Mark Job started
+        rateLimitGuardService.markJobStarted(userId, tier);
+
         log.info("[CREATE_USER_ASYNC] Faker import requested | jobId={} requestedCount={}", jobId, count);
 
-        userImportAsyncService.runFakerImportAsync(jobId,count);
+        userImportAsyncService.runFakerImportAsync(userId,jobId,count, tier);
 
         return ResponseEntity
                 .status(HttpStatus.ACCEPTED)

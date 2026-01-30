@@ -1,5 +1,6 @@
 package com.ishan.user_service.service.ratelimit;
 
+import com.ishan.user_service.customExceptions.TooManyRequestsException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -31,10 +32,6 @@ public class ImportUsersRateLimitGuardService {
      */
     private final Map<String, UserRateState> userStateMap = new ConcurrentHashMap<>();
 
-     /* =========================================================
-       STEP 1 — CHECK IF JOB CAN START
-       ========================================================= */
-
     /**
      * Validates if user is allowed to start a new job.
      *
@@ -42,10 +39,10 @@ public class ImportUsersRateLimitGuardService {
      * 1. Resolve tier from count
      * 2. Load user rate state
      * 3. Check concurrency limits
-     * 4. Check cooldown rules (if needed)
+     * 4. Check cooldown rules
      *
      * Throws:
-     * - TooManyRequestsException (later we will create this)
+     * - TooManyRequestsException
      */
     public void checkIfAllowed(String userId, long count) {
 
@@ -53,13 +50,45 @@ public class ImportUsersRateLimitGuardService {
 
         UserRateState state = getOrCreateState(userId);
 
-        // TODO: Add concurrency + cooldown checks here
+        //  concurrency + cooldown checks here
+
+        switch(tier){
+
+            case SMALL -> {
+                if(state.getRunningSmallJobs() >= 10){
+                    throw new TooManyRequestsException("SMALL job limit reached (max 10 concurrent)");
+                }
+            }
+
+            case MEDIUM -> {
+                if(state.getRunningMediumJobs() >= 5){
+                    throw new TooManyRequestsException("Medium job limit reached (max 5 concurrent)");
+                }
+            }
+
+            case LARGE -> {
+                if(state.getRunningLargeJobs() >= 3){
+                    throw new TooManyRequestsException("Large job limit reached (max 3 concurrent)");
+                }
+            }
+
+            case XL -> {
+                if(state.getRunningXLJobs() >= 1){
+                    throw new TooManyRequestsException("XL job limit reached (max 1 concurrent)");
+                }
+
+                //Set cool down for next 10 seconds
+                LocalDateTime lastFinish = state.getLastXLJobFinishedAt();
+                if(lastFinish != null){
+                    LocalDateTime allowedAfter = lastFinish.plusSeconds(10);
+
+                    if(LocalDateTime.now().isBefore(allowedAfter)){
+                        throw new TooManyRequestsException("You have wait for next 10 seconds in order to make another XL Job run");
+                    }
+                }
+            }
+        }
     }
-
-
-    /* =========================================================
-       STEP 2 — MARK JOB STARTED
-       ========================================================= */
 
     /**
      * Must be called AFTER job is accepted and async execution starts.
@@ -79,10 +108,6 @@ public class ImportUsersRateLimitGuardService {
         }
     }
 
-
-    /* =========================================================
-       STEP 3 — MARK JOB FINISHED
-       ========================================================= */
 
     /**
      * Must be called AFTER async job completes (success or failure).

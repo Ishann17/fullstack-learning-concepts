@@ -16,7 +16,7 @@ public class ImportUserJobTrackerServiceImpl implements ImportUserJobTrackerServ
     private final Map<String, ImportUserJobInfoDto> jobInfoDtoMap = new ConcurrentHashMap<>();
 
     @Override
-    public String createJob(int requestedCount) {
+    public String createJob(String userId, int requestedCount) {
         String jobId = UUID.randomUUID().toString();
         ImportUserJobInfoDto jobInfo = ImportUserJobInfoDto.builder()
                                         .jobId(jobId)

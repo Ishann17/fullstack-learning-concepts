@@ -2,6 +2,7 @@ package com.ishan.user_service.exceptionHandler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.ishan.user_service.customExceptions.BatchLimitExceededException;
+import com.ishan.user_service.customExceptions.TooManyRequestsException;
 import com.ishan.user_service.customExceptions.UserIsActiveException;
 import com.ishan.user_service.customExceptions.UserNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -146,6 +147,19 @@ public class GlobalExceptionHandler {
         errorResponse.put("path", request.getRequestURI());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<?> handleTooManyRequestsException(TooManyRequestsException exception){
+
+        Map<String, Object> errorResponse = new LinkedHashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.TOO_MANY_REQUESTS.value());
+        errorResponse.put("error", "Too Many Requests");
+        errorResponse.put("message", exception.getMessage());
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(errorResponse);
+
     }
 
 }
