@@ -88,6 +88,7 @@ public class UserImportServiceImpl implements UserImportService{
         // Think: How many boxes to load in the truck per trip
         // 1,000 is optimal - not too small (many trips), not too large (memory issues)
         int BATCH_SIZE = 1000;
+        int lastReportedPercent = 0;
 
         // Calculate total batches needed
         // Example: 2,000,000 records ÷ 1,000 = 2,000 batches
@@ -96,7 +97,7 @@ public class UserImportServiceImpl implements UserImportService{
         log.info("Starting batch processing: {} total records, {} batches of {} records each",
                 userDtoList.size(), totalBatches, BATCH_SIZE);
 
-        // ✅ Extra monitoring logs (helps during 1M+ imports)
+        // Extra monitoring logs (helps during 1M+ imports)
         // Tracks speed + percentage + estimated completion behavior
         long insertedCount = 0;
 
@@ -134,7 +135,14 @@ public class UserImportServiceImpl implements UserImportService{
             //entityManager.clear();
 
             insertedCount += userBatch.size(); // total inserted so far (last batch may be < 1000)
-            importUserJobTrackerService.updateProgress(jobId, insertedCount);
+
+            //calculate the percentage of work done we will update the progress after every 10%
+            int currentPercentage = (int) (insertedCount * 100.0)/totalBatches;
+            if(currentPercentage >= lastReportedPercent + 10 || currentPercentage == 100){
+                importUserJobTrackerService.updateProgress(jobId, currentPercentage);
+                lastReportedPercent = currentPercentage;
+            }
+
             // Log progress every 10 batches to track performance
             // Example: "Processed batch 10/2000 (10,000 records)"
             // Log progress every 10 batches to track performance

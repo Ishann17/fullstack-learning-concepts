@@ -1,4 +1,4 @@
-package com.ishan.user_service.service.ratelimit;
+package com.ishan.user_service.component.rateLimit;
 
 /**
  * Defines cost tiers for import jobs based on requested user count.
@@ -12,16 +12,38 @@ package com.ishan.user_service.service.ratelimit;
 public enum ImportJobCostTier {
 
     // Very small jobs → Allow high concurrency
-    SMALL,
+    SMALL(100,5,10),
 
     // Moderate jobs → Limited concurrency
-    MEDIUM,
+    MEDIUM(10000, 10, 5),
 
     // Heavy jobs → Strict concurrency
-    LARGE,
+    LARGE(100000, 20, 3),
 
     // Extremely heavy jobs → Usually only 1 at a time + cooldown
-    XL;
+    XL(Long.MAX_VALUE,30,1);
+
+    private final long maxCount;
+    private final int cooldownSeconds;
+    private final int maxConcurrentJobs;
+
+    ImportJobCostTier(long maxCount, int cooldownSeconds, int maxConcurrentJobs){
+        this.maxCount = maxCount;
+        this.cooldownSeconds = cooldownSeconds;
+        this.maxConcurrentJobs = maxConcurrentJobs;
+    }
+
+    public long getMaxCount() {
+        return maxCount;
+    }
+
+    public int getCooldownSeconds() {
+        return cooldownSeconds;
+    }
+
+    public int getMaxConcurrentJobs() {
+        return maxConcurrentJobs;
+    }
 
     /**
      * Converts requested import count into a cost tier.
@@ -32,17 +54,11 @@ public enum ImportJobCostTier {
      * Larger count → Higher tier → Fewer jobs allowed
      */
     public static ImportJobCostTier fromCount(long count){
-
-        // Small job → Safe to allow many parallel executions
-        if(count <= 10) return SMALL;
-
-        // Medium job → Controlled parallel execution
-        if(count <= 1000) return MEDIUM;
-
-        // Large job → Very limited parallel execution
-        if(count <= 100000) return LARGE;
-
-        // Anything bigger → Treated as extreme load
+        for (ImportJobCostTier tier : values()) {
+            if (count <= tier.maxCount) {
+                return tier;
+            }
+        }
         return XL;
     }
 }
