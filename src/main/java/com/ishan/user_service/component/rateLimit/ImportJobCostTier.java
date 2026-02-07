@@ -1,5 +1,6 @@
 package com.ishan.user_service.component.rateLimit;
 
+import lombok.Getter;
 /**
  * Defines cost tiers for import jobs based on requested user count.
  * Purpose:
@@ -9,6 +10,7 @@ package com.ishan.user_service.component.rateLimit;
  * - Central place to manage tier rules.
  * - Avoids hardcoding count checks across multiple classes.
  */
+@Getter
 public enum ImportJobCostTier {
 
     // Very small jobs → Allow high concurrency
@@ -31,18 +33,6 @@ public enum ImportJobCostTier {
         this.maxCount = maxCount;
         this.cooldownSeconds = cooldownSeconds;
         this.maxConcurrentJobs = maxConcurrentJobs;
-    }
-
-    public long getMaxCount() {
-        return maxCount;
-    }
-
-    public int getCooldownSeconds() {
-        return cooldownSeconds;
-    }
-
-    public int getMaxConcurrentJobs() {
-        return maxConcurrentJobs;
     }
 
     /**

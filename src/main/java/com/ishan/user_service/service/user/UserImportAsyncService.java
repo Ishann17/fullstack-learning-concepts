@@ -33,11 +33,11 @@ public class UserImportAsyncService {
 
     @Async
     //@Async method must be public and called from another Spring bean.
-    public void runFakerImportAsync(String userId, String jobId, int count, ImportJobCostTier tier){
+    public void runFakerImportAsync(String userId, String jobId, int count, ImportJobCostTier tier) throws InterruptedException {
         long startTime = System.currentTimeMillis();
 
         log.info("[Async] Import started | jobId={} requestedCount={}", jobId, count);
-
+        //Thread.sleep(5000);
         try{
             List<UserDto> userDtoList = mockUserGeneratorService.generateUsers(count);
             log.info("[Async] Faker generation done | jobId={} generated={}", jobId, userDtoList.size());

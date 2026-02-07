@@ -33,17 +33,17 @@ public class UserBatchSaverService {
      * "If a transaction already exists, should this method JOIN it,
      *  or should it CREATE a new one?"
      *
-     * ✅ What does REQUIRES_NEW mean?
+     * What does REQUIRES_NEW mean?
      * REQUIRES_NEW = Always create a NEW, independent transaction for this method call.
      *
      * So for each batch:
      * - Start a new transaction
      * - Insert 1000 users
-     * - Commit immediately ✅ (data becomes permanent)
+     * - Commit immediately (data becomes permanent)
      *
      * Now if the import fails later:
-     * - Already committed batches remain saved ✅
-     * - Only the currently running batch might be lost ❌
+     * - Already committed batches remain saved
+     * - Only the currently running batch might be lost
      *
      * Real-world analogy (Google Pay / Bank transfer):
      * - Each batch is like a separate payment.
@@ -64,7 +64,7 @@ public class UserBatchSaverService {
     }
 }
 /**
- * ✅ Why we created a separate service for saving batches?
+ * Why we created a separate service for saving batches?
  *
  * We want each batch to be committed independently using:
  * @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -76,12 +76,10 @@ public class UserBatchSaverService {
  * What happens if we don't create this separate service?
  * - @Transactional(REQUIRES_NEW) will be ignored silently
  * - No real transaction will exist during flush()
- * - We get this exception:
- *
- * jakarta.persistence.TransactionRequiredException:
+ * - We get this exception -> jakarta.persistence.TransactionRequiredException:
  * "No EntityManager with actual transaction available for current thread - cannot reliably process 'flush' call"
  *
- * ✅ What problem does this separate service solve?
+ * What problem does this separate service solve?
  * Since this class is a different Spring-managed bean,
  * Spring creates a proxy for it and transaction rules are applied correctly.
  *

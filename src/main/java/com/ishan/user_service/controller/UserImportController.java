@@ -238,7 +238,7 @@ public class UserImportController {
     }
 
     @PostMapping("/import/async")
-    public ResponseEntity<?> importMultipleUsersFromFakerLibraryWithAsyncJob(@RequestHeader("X-USER-ID") String userId, @RequestParam(defaultValue = "10") int count){
+    public ResponseEntity<?> importMultipleUsersFromFakerLibraryWithAsyncJob(@RequestHeader("X-USER-ID") String userId, @RequestParam(defaultValue = "10") int count) throws InterruptedException {
 
         //Rate Limit Check
         rateLimitGuardService.checkIfAllowed(userId, count);

@@ -1,10 +1,7 @@
 package com.ishan.user_service.exceptionHandler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.ishan.user_service.customExceptions.BatchLimitExceededException;
-import com.ishan.user_service.customExceptions.TooManyRequestsException;
-import com.ishan.user_service.customExceptions.UserIsActiveException;
-import com.ishan.user_service.customExceptions.UserNotFoundException;
+import com.ishan.user_service.customExceptions.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,6 +153,21 @@ public class GlobalExceptionHandler {
         errorResponse.put("timestamp", LocalDateTime.now());
         errorResponse.put("status", HttpStatus.TOO_MANY_REQUESTS.value());
         errorResponse.put("error", "Too Many Requests");
+        errorResponse.put("message", exception.getMessage());
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(errorResponse);
+
+    }
+
+    @ExceptionHandler(CooldownActiveException.class)
+    public ResponseEntity<?> handleCooldownActiveException(CooldownActiveException exception){
+
+        Map<String, Object> errorResponse = new LinkedHashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.TOO_MANY_REQUESTS.value());
+        errorResponse.put("error", "User is in cooldown");
+        errorResponse.put("wait", exception.getTotalSeconds());
+        errorResponse.put("remaining", exception.getRemainingSeconds());
         errorResponse.put("message", exception.getMessage());
 
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(errorResponse);

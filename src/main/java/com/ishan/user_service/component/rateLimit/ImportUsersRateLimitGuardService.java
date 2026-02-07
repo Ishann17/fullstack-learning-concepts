@@ -1,18 +1,14 @@
 package com.ishan.user_service.component.rateLimit;
 
 import com.ishan.user_service.component.redis.RedisStore;
+import com.ishan.user_service.customExceptions.CooldownActiveException;
 import com.ishan.user_service.customExceptions.TooManyRequestsException;
 import com.ishan.user_service.utility.redis.RedisKeysGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Core decision engine for import job rate limiting.
@@ -34,7 +30,7 @@ public class ImportUsersRateLimitGuardService {
 
     private final Logger log = LoggerFactory.getLogger(ImportUsersRateLimitGuardService.class);
 
-    private final Map<String, UserRateState> userStateMap = new ConcurrentHashMap<>();
+    //private final Map<String, UserRateState> userStateMap = new ConcurrentHashMap<>();
 
     private final RedisStore redisStore;
 
@@ -54,23 +50,30 @@ public class ImportUsersRateLimitGuardService {
 
         checkCooldown(userId);
         ImportJobCostTier tier = ImportJobCostTier.fromCount(count);
+
+        /*//COMMENTED: cooldown state moved from JVM memory to Redis
         UserRateState state = getOrCreateState(userId);
-
-
-        //GLOBAL cooldown check
         LocalDateTime allowedAt = state.getNextImportAllowedAt();
-
         if(allowedAt != null && LocalDateTime.now().isBefore(allowedAt)){
             throw new TooManyRequestsException(
                     "You must wait until " + allowedAt + " before starting another import."
             );
-        }
+        }*/
+        //AtomicInteger running = state.getRunningJobs().computeIfAbsent(tier, t -> new AtomicInteger(0)); COMMENTED BECAUSE LOGIC SHIFTED FROM IM_MEMORY TO REDIS
 
         // Tier concurrency check
-        AtomicInteger running = state.getRunningJobs()
-                        .computeIfAbsent(tier, t -> new AtomicInteger(0));
-
-        if(running.get() >= tier.getMaxConcurrentJobs()){
+        long running = redisStore.countRunningJobs(userId, tier);
+        if(running >= tier.getMaxConcurrentJobs()){
+            String cooldownKey = RedisKeysGenerator.cooldownKey(userId);
+            // COOLDOWN TTL Duration.ofSeconds (Rate-limiting purpose)
+            // This TTL represents how long the USER must wait
+            // after hitting a concurrency limit.
+            // Meaning:
+            // - System is overloaded for this user
+            // - Block ALL job types during this window
+            // - Duration depends on the tier that caused the overload
+            // This TTL is about SYSTEM RECOVERY, not job execution.
+            redisStore.setWithTtl(cooldownKey, tier.name(), Duration.ofSeconds(tier.getCooldownSeconds()));
             throw new TooManyRequestsException(
                     tier.name() + " concurrency limit reached. Max allowed = "
                             + tier.getMaxConcurrentJobs()
@@ -86,20 +89,21 @@ public class ImportUsersRateLimitGuardService {
      */
     public void markJobStarted(String userId, String jobId, ImportJobCostTier tier){
 
-        UserRateState state = getOrCreateState(userId);
-
-        String jobKey = RedisKeysGenerator.jobKey(jobId);
+        String jobKey = RedisKeysGenerator.jobKey(userId,tier,jobId);
         // lease for the job; pick a safe max duration (e.g., 30 minutes for now)
+        // JOB LEASE TTL (Safety purpose)
+        // This TTL represents the maximum expected lifetime of a job.
+        // Meaning:
+        // - Job is considered running while this key exists
+        // - If the app crashes or never calls markJobFinished(),
+        //   Redis will auto-cleanup this job key
+        // This TTL is about FAILURE SAFETY, not rate limiting.
         redisStore.setWithTtl(jobKey, tier.name(), Duration.ofMinutes(30));
-
-        state.getRunningJobs()
-                .computeIfAbsent(tier, t -> new AtomicInteger(0))
-                .incrementAndGet();
-
+        long running = redisStore.countRunningJobs(userId, tier);
         log.info("[RATE LIMIT GUARD]|User={} Tier={} Running={}",
                 userId,
                 tier,
-                state.getRunningJobs().get(tier).get());
+                running);
     }
 
 
@@ -113,35 +117,19 @@ public class ImportUsersRateLimitGuardService {
      */
     public void markJobFinished(String userId, String jobId, ImportJobCostTier tier){
 
-        UserRateState state = getOrCreateState(userId);
-
-        AtomicInteger running = state.getRunningJobs().get(tier);
-
-        String jobKey = RedisKeysGenerator.jobKey(jobId);
+        String jobKey = RedisKeysGenerator.jobKey(userId, tier, jobId);
         redisStore.delete(jobKey);
-
-
-        if(running != null){
-            running.decrementAndGet();
-        }
-
-        // We are moving shared runtime state from JVM memory to Redis.
-        if(tier == ImportJobCostTier.XL){
-            String cooldownKey = RedisKeysGenerator.cooldownKey(userId);
-            // 30 seconds cooldown
-            redisStore.setWithTtl(cooldownKey, "true", Duration.ofSeconds(30));
-        }
     }
 
-    private UserRateState getOrCreateState(String userId){
+    /*private UserRateState getOrCreateState(String userId){
         return userStateMap.computeIfAbsent(userId, id -> new UserRateState());
-    }
+    }*/
 
     /**
      * Checks whether the user is currently in cooldown.
      *
      * PURPOSE:
-     * - Enforces mandatory wait period after XL jobs
+     * - Enforces a global cooldown triggered when any tier hits its concurrency limit
      * - Uses Redis TTL to auto-expire cooldown
      *
      * DESIGN LEARNING:
@@ -151,10 +139,15 @@ public class ImportUsersRateLimitGuardService {
     private void checkCooldown(String userId) {
         String cooldownKey = RedisKeysGenerator.cooldownKey(userId);
 
+        if(!redisStore.exists(cooldownKey)){
+            return;
+        }
+        Long ttlSeconds = redisStore.getTtlSeconds(cooldownKey);
+        String value = redisStore.getValue(cooldownKey);
+        ImportJobCostTier tier = ImportJobCostTier.valueOf(value);
+        int totalTime =  tier.getCooldownSeconds();
         if (redisStore.exists(cooldownKey)) {
-            throw new TooManyRequestsException(
-                    "User is in cooldown period. Please try again later."
-            );
+            throw new CooldownActiveException("User is in cooldown period", totalTime, ttlSeconds);
         }
     }
 

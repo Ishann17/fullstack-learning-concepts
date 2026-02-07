@@ -1,5 +1,5 @@
 package com.ishan.user_service.component.rateLimit;
-
+//COMMENTED BECAUSE USER RATE STATE LOGIC SHIFTED FROM JVM TO REDIS
 import lombok.Getter;
 import lombok.Setter;
 
@@ -20,9 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Used By:
  * - ImportUsersRateLimitGuardService
  */
-@Getter
-@Setter
-public class UserRateState {
+
+//public class UserRateState {
 
     /**
      * Tracks number of currently running jobs per tier.
@@ -33,19 +32,19 @@ public class UserRateState {
      * - Avoids NullPointerExceptions
      * - Simplifies guard logic
      */
-    private final Map<ImportJobCostTier, AtomicInteger> runningJobs = new ConcurrentHashMap<>();
+   // private final Map<ImportJobCostTier, AtomicInteger> runningJobs = new ConcurrentHashMap<>();
 
     /**
      * Global cooldown timestamp.
      * If user triggers an XL job:
      * → block ALL future jobs until this time.
      */
-    private volatile LocalDateTime nextImportAllowedAt;
+    //private volatile LocalDateTime nextImportAllowedAt;
 
-    public UserRateState() {
+   /* public UserRateState() {
         for (ImportJobCostTier tier : ImportJobCostTier.values()) {
             runningJobs.put(tier, new AtomicInteger(0));
         }
-    }
-}
+    }*/
+
 

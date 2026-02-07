@@ -1,5 +1,7 @@
 package com.ishan.user_service.utility.redis;
 
+import com.ishan.user_service.component.rateLimit.ImportJobCostTier;
+
 /**
  * Central place for all Redis key formats used in the system.
  *
@@ -22,33 +24,28 @@ public final class RedisKeysGenerator {
     private RedisKeysGenerator() {}
 
     /**
-     * Key representing running job state for a user.
-     *
-     * Example:
-     * user:vasu:runningJobs
+     * Redis key representing a single running job (job lease).
      *
      * PURPOSE:
-     * - Holds per-user concurrency information
-     * - Shared across all application instances
-     * - Source of truth for rate limiting decisions
-     */
-    public static String runningJobsKey(String userId) {
-        return "user:" + userId + ":runningJobs";
-    }
-
-    /**
-     * Key representing a single job lease.
+     * - Each running job is represented by exactly one Redis key
+     * - Presence of this key == job is currently running
      *
-     * Example:
-     * job:3f2a9c9e-1b7c-4a0e-bb8a-123456
+     * WHY THIS DESIGN:
+     * - We do NOT store counters (they break on crashes)
+     * - Concurrency is derived by COUNTING these keys
+     * - Redis TTL on this key guarantees automatic cleanup
      *
-     * PURPOSE:
-     * - Each job gets its own Redis entry
-     * - TTL on this key acts as a safety net
-     * - If a pod crashes, Redis auto-cleans stale jobs
+     * FAILURE SAFETY:
+     * - If the application crashes or markJobFinished() is never called,
+     *   Redis automatically deletes the key when TTL expires
+     * - This prevents permanent permit leaks and self-heals the system
+     *
+     * LEARNING:
+     * - Job is the unit of truth, not user state
+     * - Derived state (counts) should be computed, not stored
      */
-    public static String jobKey(String jobId) {
-        return "job:" + jobId;
+    public static String jobKey(String userId, ImportJobCostTier tier, String jobId) {
+        return "job:"+userId+":"+tier.name()+":"+jobId;
     }
 
     /**
@@ -65,5 +62,6 @@ public final class RedisKeysGenerator {
     public static String cooldownKey(String userId) {
         return "user:" + userId + ":cooldown";
     }
+
 
 }
