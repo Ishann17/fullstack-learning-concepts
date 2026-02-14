@@ -240,17 +240,17 @@ public class UserImportController {
     @PostMapping("/import/async")
     public ResponseEntity<?> importMultipleUsersFromFakerLibraryWithAsyncJob(@RequestHeader("X-USER-ID") String userId, @RequestParam(defaultValue = "10") int count) throws InterruptedException {
 
+        //Create Job ID
+        String jobId = importUserJobTrackerService.createJob(userId, count);
+
         //Rate Limit Check
-        rateLimitGuardService.checkIfAllowed(userId, count);
+        rateLimitGuardService.checkIfAllowed(userId, count, jobId);
 
         //Determine the Job Tier (S,M,L OR XL)
         ImportJobCostTier tier = ImportJobCostTier.fromCount(count);
 
-        //Create Job ID
-        String jobId = importUserJobTrackerService.createJob(userId, count);
-
-        //Mark Job started
-        rateLimitGuardService.markJobStarted(userId, jobId, tier);
+        //COMMENTED Mark Job started : Now Check If Allowed will call it internally.
+        //rateLimitGuardService.markJobStarted(userId, jobId, tier);
 
         log.info("[CREATE_USER_ASYNC] Faker import requested | jobId={} requestedCount={}", jobId, count);
 

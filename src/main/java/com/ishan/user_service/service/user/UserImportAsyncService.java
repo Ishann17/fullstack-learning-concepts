@@ -37,7 +37,7 @@ public class UserImportAsyncService {
         long startTime = System.currentTimeMillis();
 
         log.info("[Async] Import started | jobId={} requestedCount={}", jobId, count);
-        //Thread.sleep(5000);
+        //Thread.sleep(10000);
         try{
             List<UserDto> userDtoList = mockUserGeneratorService.generateUsers(count);
             log.info("[Async] Faker generation done | jobId={} generated={}", jobId, userDtoList.size());

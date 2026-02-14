@@ -64,4 +64,9 @@ public final class RedisKeysGenerator {
     }
 
 
+    public static String userRunningJobsKey(String userId, ImportJobCostTier tier) {
+        return "user:" + userId + ":" + tier.name() + ":jobs";
+    }
+
+
 }

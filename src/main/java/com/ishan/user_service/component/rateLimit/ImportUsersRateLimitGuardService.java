@@ -15,13 +15,13 @@ import java.time.Duration;
  * Purpose:
  * - Decides if a user is allowed to start a new import job.
  * - Enforces concurrency limits per cost tier.
- * - Enforces cooldown after XL jobs.
+ * - Enforces cooldown after jobs limit is reached.
  * Why Needed:
  * - Protects DB + CPU from overload.
  * - Ensures multi-tenant fairness.
  * Design:
- * - In-memory state (for now)
- * - Thread-safe storage using ConcurrentHashMap
+ * - Redis based
+ * - Using Lua Script for atomicity
  * Future:
  * - Can be replaced with Redis / DB backed state for distributed systems.
  */
@@ -46,10 +46,13 @@ public class ImportUsersRateLimitGuardService {
      * Check GLOBAL cooldown (XL protection)
      * Check tier concurrency
      */
-    public void checkIfAllowed(String userId, long count){
+    public void checkIfAllowed(String userId, long count, String jobId){
+        ImportJobCostTier tier = ImportJobCostTier.fromCount(count);
+
+        log.info("[RATE_LIMIT] Checking request | userId={} tier={} jobId={} requestedCount={}",
+                userId, tier, jobId, count);
 
         checkCooldown(userId);
-        ImportJobCostTier tier = ImportJobCostTier.fromCount(count);
 
         /*//COMMENTED: cooldown state moved from JVM memory to Redis
         UserRateState state = getOrCreateState(userId);
@@ -58,16 +61,26 @@ public class ImportUsersRateLimitGuardService {
             throw new TooManyRequestsException(
                     "You must wait until " + allowedAt + " before starting another import."
             );
-        }*/
-        //AtomicInteger running = state.getRunningJobs().computeIfAbsent(tier, t -> new AtomicInteger(0)); COMMENTED BECAUSE LOGIC SHIFTED FROM IM_MEMORY TO REDIS
+        }AtomicInteger running = state.getRunningJobs().computeIfAbsent(tier, t -> new AtomicInteger(0));*/
 
-        // Tier concurrency check
-        long running = redisStore.countRunningJobs(userId, tier);
+        String userRunningJobKey = RedisKeysGenerator.userRunningJobsKey(userId, tier);
+        int limit = tier.getMaxConcurrentJobs();
+        boolean allowed = redisStore.executeLuaScriptToCheckIfAllowed(userRunningJobKey, limit, jobId);
+
+        if(!allowed){
+            log.warn("[RATE_LIMIT] BLOCKED | userId={} tier={} jobId={} reason=CONCURRENCY_LIMIT maxAllowed={}",userId, tier, jobId, limit);
+            throw new TooManyRequestsException(tier.name() + " concurrency limit reached. Max allowed = "+ tier.getMaxConcurrentJobs());
+        }
+            log.info("[RATE_LIMIT] ALLOWED | userId={} tier={} jobId={} slotReserved=true",userId, tier, jobId);
+        // Called after Lua allows the request to create the TTL safety key and enable automatic cleanup if the job never finishes
+        markJobStarted(userId, jobId, tier);
+
+        // Tier concurrency check --- Logic shifted to Lua Script for Atomicity
+        // Uses Redis SET size for fast, non-blocking per-user per-tier concurrency check
+        /*long running = redisStore.countPerUserRunningJobsFromSet(userRunningJobKey);
         if(running >= tier.getMaxConcurrentJobs()){
             String cooldownKey = RedisKeysGenerator.cooldownKey(userId);
-            // COOLDOWN TTL Duration.ofSeconds (Rate-limiting purpose)
-            // This TTL represents how long the USER must wait
-            // after hitting a concurrency limit.
+            // This TTL represents how long the USER must wait after hitting a concurrency limit.
             // Meaning:
             // - System is overloaded for this user
             // - Block ALL job types during this window
@@ -78,7 +91,7 @@ public class ImportUsersRateLimitGuardService {
                     tier.name() + " concurrency limit reached. Max allowed = "
                             + tier.getMaxConcurrentJobs()
             );
-        }
+        }*/
     }
 
 
@@ -90,27 +103,22 @@ public class ImportUsersRateLimitGuardService {
     public void markJobStarted(String userId, String jobId, ImportJobCostTier tier){
 
         String jobKey = RedisKeysGenerator.jobKey(userId,tier,jobId);
-        // lease for the job; pick a safe max duration (e.g., 30 minutes for now)
-        // JOB LEASE TTL (Safety purpose)
-        // This TTL represents the maximum expected lifetime of a job.
-        // Meaning:
-        // - Job is considered running while this key exists
-        // - If the app crashes or never calls markJobFinished(),
-        //   Redis will auto-cleanup this job key
-        // This TTL is about FAILURE SAFETY, not rate limiting.
-        redisStore.setWithTtl(jobKey, tier.name(), Duration.ofMinutes(30));
-        long running = redisStore.countRunningJobs(userId, tier);
-        log.info("[RATE LIMIT GUARD]|User={} Tier={} Running={}",
-                userId,
-                tier,
-                running);
+        // This TTL is about FAILURE SAFETY, not rate limiting.If the app crashes or never calls markJobFinished(), Redis will auto-cleanup this job key
+        redisStore.setWithTtl(jobKey, tier.name(), Duration.ofMinutes(15));
+
+        String userRunningJobKey = RedisKeysGenerator.userRunningJobsKey(userId, tier);
+        // Add jobId to Redis SET to maintain fast and accurate per-user per-tier concurrency tracking
+        //We commented the below line because Lua Script will add the Key and Value for the Redis SET if Allowed.
+        //redisStore.insertUserRunningJobsInsideSet(userRunningJobKey, jobId);
+
+        long running = redisStore.countPerUserRunningJobsFromSet(userRunningJobKey);
+        log.info("[RATE_LIMIT] Mark Job started | userId={} tier={} jobId={} runningJobs={}",userId,tier,jobId,running);
     }
 
 
 
     /**
      * MUST be called in ASYNC finally block.
-     *
      * Handles:
      * decrement
      * XL cooldown
@@ -118,7 +126,13 @@ public class ImportUsersRateLimitGuardService {
     public void markJobFinished(String userId, String jobId, ImportJobCostTier tier){
 
         String jobKey = RedisKeysGenerator.jobKey(userId, tier, jobId);
+        // Remove the TTL safety key — marks job as no longer active in Redis
         redisStore.delete(jobKey);
+        String runningJobsKey = RedisKeysGenerator.userRunningJobsKey(userId, tier);
+        // Remove jobId from running jobs SET — keeps concurrency count accurate
+        redisStore.deleteUserRunningJobsFromSet(runningJobsKey, jobId);
+        log.info(
+                "[RATE_LIMIT] Job finished | userId={} tier={} jobId={} jobKeyDeleted={} setUpdated={}",userId,tier,jobId,jobKey,runningJobsKey);
     }
 
     /*private UserRateState getOrCreateState(String userId){
