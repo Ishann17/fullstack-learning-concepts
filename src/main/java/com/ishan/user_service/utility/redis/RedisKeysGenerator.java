@@ -55,7 +55,7 @@ public final class RedisKeysGenerator {
      * user:vasu:cooldown
      *
      * PURPOSE:
-     * - Enforces "wait period" after XL jobs
+     * - Enforces "wait period" after all jobs as per tier cool down seconds
      * - TTL-based → automatically expires
      * - Must be visible across all pods
      */

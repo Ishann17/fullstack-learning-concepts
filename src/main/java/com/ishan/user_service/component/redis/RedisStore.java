@@ -209,7 +209,7 @@ public class RedisStore {
      * - Avoids over-booking of job slots
      *
      * PARAMETERS:
-     * runningJobsKey → Redis SET key holding running jobIds for user+tier
+     * runningJobsKey → Redis SET key(Name of the SET) holding running jobIds for user+tier
      * limit          → maximum allowed concurrent jobs for this tier
      * jobId          → unique job identifier to reserve slot
      *
