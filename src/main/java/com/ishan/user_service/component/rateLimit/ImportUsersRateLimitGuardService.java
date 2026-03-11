@@ -9,8 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Core decision engine for import job rate limiting.
@@ -162,9 +160,7 @@ public class ImportUsersRateLimitGuardService {
         String value = redisStore.getValue(cooldownKey);
         ImportJobCostTier tier = ImportJobCostTier.valueOf(value);
         int totalTime =  tier.getCooldownSeconds();
-        if (redisStore.exists(cooldownKey)) {
-            throw new CooldownActiveException("User is in cooldown period", totalTime, ttlSeconds);
-        }
+        throw new CooldownActiveException("User is in cooldown period", totalTime, ttlSeconds);
     }
 
 }
