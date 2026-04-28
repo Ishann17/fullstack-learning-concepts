@@ -109,7 +109,7 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
-
+    //soft deletion revert
     @PostMapping("/{id}/reactivate")
     public ResponseEntity<?> reactivateDeletedUser(@PathVariable int id){
         User user = userService.reactivateUser(id);
